@@ -16,17 +16,17 @@ struct ContentView: View {
         
         VStack {
             Spacer()
-            Text(slotViewModel.titleText)
+            Text(self.slotViewModel.titleText)
             Spacer()
             
             HStack {
-                SlotView { Text(slotViewModel.slot1Emoji) }
-                SlotView { Text(slotViewModel.slot2Emoji) }
-                SlotView { Text(slotViewModel.slot3Emoji) }
+                SlotView { Text(self.slotViewModel.slot1Emoji) }
+                SlotView { Text(self.slotViewModel.slot2Emoji) }
+                SlotView { Text(self.slotViewModel.slot3Emoji) }
             }
             
             Spacer()
-            Button(action: { slotViewModel.running.toggle(); slotViewModel.gameStarted = true }, label: { Text(slotViewModel.buttonText) })
+            Button(action: { self.slotViewModel.running.toggle(); self.slotViewModel.gameStarted = true }, label: { Text(self.slotViewModel.buttonText) })
             Spacer()
         }
     }
@@ -36,43 +36,48 @@ class SlotViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     private enum EmojiKind: String, CaseIterable {
-      case first = "🍋"
-      case second = "🍒"
-      case third = "🦠"
+        case first = "🇷🇺"
+        case second = "🇰🇿"
+        case third = "🇧🇾"
     }
-
+    
     private let timer = Timer
         .publish(every: 0.1, on: .main, in: .common)
         .autoconnect()
     
     init() {
-        timer
+        self.timer
             .receive(on: RunLoop.main)
             .sink { _ in self.randomize() }
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
         
-        $running
+        self.$running
             .receive(on: RunLoop.main)
             .map {
-                guard !$0 && self.gameStarted else { return "Хорошая ставка — это когда выигрыш вероятнее проигрыша." }
-                return self.slot1Emoji == self.slot2Emoji && self.slot2Emoji == self.slot3Emoji ? "Изи катка" : "Ты не проигравший до тех пор, пока ты не сдался"
+                guard !$0 && self.gameStarted else { return "— Флэш-рояль, неудачники!\n— Мы в слоты играем" }
+                return self.isWinCondition() ? "Изи катка" : "Ты не проигравший до тех пор, пока ты не сдался"
             }
             .assign(to: \.titleText, on: self)
-            .store(in: &cancellables)
+            .store(in: &self.cancellables)
         
-        $running
+        self.$running
             .receive(on: RunLoop.main)
-            .map { $0 == true ? "Стоп!" : "Крутить!" }
-            .assign(to: \.buttonText, on: self)
-            .store(in: &cancellables)
+            .map { $0 == true ? "Стоп" : "Испытать удачу" }
+            .assign(to: \.self.buttonText, on: self)
+            .store(in: &self.cancellables)
     }
     
     private func randomize() {
-        guard running else { return }
-        slot1Emoji =
+        guard self.running else { return }
+        self.slot1Emoji =
         EmojiKind.allCases[Int.random(in: 0...EmojiKind.allCases.count - 1)].rawValue
-        slot2Emoji =         EmojiKind.allCases[Int.random(in: 0...EmojiKind.allCases.count - 1)].rawValue
-        slot3Emoji =         EmojiKind.allCases[Int.random(in: 0...EmojiKind.allCases.count - 1)].rawValue
+        self.slot2Emoji =         EmojiKind.allCases[Int.random(in: 0...EmojiKind.allCases.count - 1)].rawValue
+        self.slot3Emoji =         EmojiKind.allCases[Int.random(in: 0...EmojiKind.allCases.count - 1)].rawValue
+    }
+    
+    private func isWinCondition() -> Bool {
+        return self.slot1Emoji == self.slot2Emoji &&
+        self.slot2Emoji == self.slot3Emoji
     }
     
     @Published var running = false
@@ -92,7 +97,7 @@ struct SlotView <Content: View>: View {
     init(@ViewBuilder content: @escaping () -> Content) { self.content = content }
     
     var body: some View {
-        content()
+        self.content()
             .font(.system(size: 64.0))
             .transition(.asymmetric(insertion: .move(edge: .top), removal: .move(edge: .bottom)))
             .animation(.easeInOut)
