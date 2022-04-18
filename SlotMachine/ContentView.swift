@@ -24,6 +24,7 @@ struct ContentView: View {
                 SlotView { Text(self.slotViewModel.slot2Emoji) }
                 SlotView { Text(self.slotViewModel.slot3Emoji) }
             }
+            .drawingGroup()
             
             Spacer()
             Button(action: { self.slotViewModel.running.toggle(); self.slotViewModel.gameStarted = true }, label: { Text(self.slotViewModel.buttonText) })
@@ -53,8 +54,9 @@ class SlotViewModel: ObservableObject {
         
         self.$running
             .receive(on: RunLoop.main)
+            .combineLatest($gameStarted)
             .map {
-                guard !$0 && self.gameStarted else { return "— Флэш-рояль, неудачники!\n— Мы в слоты играем" }
+                guard !$0 && $1 else { return "— Флэш-рояль, неудачники!\n— Мы в слоты играем" }
                 return self.isWinCondition() ? "Изи катка" : "Ты не проигравший до тех пор, пока ты не сдался"
             }
             .assign(to: \.titleText, on: self)
